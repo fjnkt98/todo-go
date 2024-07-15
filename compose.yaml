@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:15-bullseye
+    container_name: todo-go-postgres
+    environment:
+      POSTGRES_PASSWORD: todo
+      POSTGRES_USER: todo
+      POSTGRES_DB: todo
+      POSTGRES_HOST_AUTH_METHOD: password
+      TZ: "Asia/Tokyo"
+    volumes:
+      - type: volume
+        source: todo-go-postgres
+        target: /var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    networks:
+      todo-go-net:
+
+networks:
+  todo-go-net:
+
+volumes:
+  todo-go-postgres:
