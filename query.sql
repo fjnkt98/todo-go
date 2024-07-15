@@ -8,16 +8,15 @@ FROM
 ORDER BY
     "id" ASC;
 
--- name: CreateItem :execresult
+-- name: CreateItem :one
 INSERT INTO
     "items" ("title")
 VALUES
     ($1)
 RETURNING
-    "id",
-    "title";
+    *;
 
--- name: UpdateItem :execresult
+-- name: UpdateItem :one
 UPDATE "items"
 SET
     "title" = $2,

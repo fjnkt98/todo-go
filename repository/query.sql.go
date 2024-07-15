@@ -7,22 +7,22 @@ package repository
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
-const createItem = `-- name: CreateItem :execresult
+const createItem = `-- name: CreateItem :one
 INSERT INTO
     "items" ("title")
 VALUES
     ($1)
 RETURNING
-    "id",
-    "title"
+    id, title, updated_at
 `
 
-func (q *Queries) CreateItem(ctx context.Context, title string) (pgconn.CommandTag, error) {
-	return q.db.Exec(ctx, createItem, title)
+func (q *Queries) CreateItem(ctx context.Context, title string) (Item, error) {
+	row := q.db.QueryRow(ctx, createItem, title)
+	var i Item
+	err := row.Scan(&i.ID, &i.Title, &i.UpdatedAt)
+	return i, err
 }
 
 const fetchItems = `-- name: FetchItems :many
@@ -56,7 +56,7 @@ func (q *Queries) FetchItems(ctx context.Context) ([]Item, error) {
 	return items, nil
 }
 
-const updateItem = `-- name: UpdateItem :execresult
+const updateItem = `-- name: UpdateItem :one
 UPDATE "items"
 SET
     "title" = $2,
@@ -72,6 +72,9 @@ type UpdateItemParams struct {
 	Title string `db:"title"`
 }
 
-func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (pgconn.CommandTag, error) {
-	return q.db.Exec(ctx, updateItem, arg.ID, arg.Title)
+func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error) {
+	row := q.db.QueryRow(ctx, updateItem, arg.ID, arg.Title)
+	var i Item
+	err := row.Scan(&i.ID, &i.Title, &i.UpdatedAt)
+	return i, err
 }
