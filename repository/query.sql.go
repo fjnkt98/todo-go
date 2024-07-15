@@ -25,7 +25,7 @@ func (q *Queries) CreateItem(ctx context.Context, title string) (Item, error) {
 	return i, err
 }
 
-const fetchItems = `-- name: FetchItems :many
+const getItems = `-- name: GetItems :many
 SELECT
     "id",
     "title",
@@ -36,8 +36,8 @@ ORDER BY
     "id" ASC
 `
 
-func (q *Queries) FetchItems(ctx context.Context) ([]Item, error) {
-	rows, err := q.db.Query(ctx, fetchItems)
+func (q *Queries) GetItems(ctx context.Context) ([]Item, error) {
+	rows, err := q.db.Query(ctx, getItems)
 	if err != nil {
 		return nil, err
 	}

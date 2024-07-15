@@ -1,0 +1,638 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>todo: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/fjnkt98/todo-go/api/todo/get.go (80.0%)</option>
+				
+				<option value="file1">github.com/fjnkt98/todo-go/api/todo/handler.go (69.6%)</option>
+				
+				<option value="file2">github.com/fjnkt98/todo-go/api/todo/post.go (75.0%)</option>
+				
+				<option value="file3">github.com/fjnkt98/todo-go/api/todo/put.go (75.0%)</option>
+				
+				<option value="file4">github.com/fjnkt98/todo-go/api/todo/types.go (100.0%)</option>
+				
+				<option value="file5">github.com/fjnkt98/todo-go/api/validator.go (66.7%)</option>
+				
+				<option value="file6">github.com/fjnkt98/todo-go/main.go (0.0%)</option>
+				
+				<option value="file7">github.com/fjnkt98/todo-go/repository/db.go (100.0%)</option>
+				
+				<option value="file8">github.com/fjnkt98/todo-go/repository/engine.go (71.4%)</option>
+				
+				<option value="file9">github.com/fjnkt98/todo-go/repository/query.sql.go (85.7%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package todo
+
+import (
+        "context"
+
+        "github.com/fjnkt98/todo-go/repository"
+        "github.com/goark/errs"
+        "github.com/jackc/pgx/v5"
+        "github.com/jackc/pgx/v5/pgxpool"
+)
+
+type GetResponse struct {
+        Items []Item `json:"items"`
+}
+
+func GetItems(ctx context.Context, pool *pgxpool.Pool) (*GetResponse, error) <span class="cov8" title="1">{
+        q := repository.New(pool)
+
+        items, err := q.GetItems(ctx)
+        if err != nil &amp;&amp; errs.Is(err, pgx.ErrNoRows) </span><span class="cov0" title="0">{
+                return nil, errs.New("failed to get items", errs.WithCause(err))
+        }</span>
+
+        <span class="cov8" title="1">return &amp;GetResponse{
+                Items: NewItems(items),
+        }, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package todo
+
+import (
+        "net/http"
+
+        "github.com/jackc/pgx/v5/pgxpool"
+        "github.com/labstack/echo/v4"
+)
+
+type Handler struct {
+        pool *pgxpool.Pool
+}
+
+func NewHandler(pool *pgxpool.Pool) *Handler <span class="cov8" title="1">{
+        return &amp;Handler{
+                pool: pool,
+        }
+}</span>
+
+func (h *Handler) GET(ctx echo.Context) error <span class="cov8" title="1">{
+        res, err := GetItems(ctx.Request().Context(), h.pool)
+        if err != nil </span><span class="cov0" title="0">{
+                return &amp;echo.HTTPError{
+                        Code:     http.StatusInternalServerError,
+                        Message:  "internal server error",
+                        Internal: err,
+                }
+        }</span>
+
+        <span class="cov8" title="1">return ctx.JSON(http.StatusOK, res)</span>
+}
+
+func (h *Handler) POST(ctx echo.Context) error <span class="cov8" title="1">{
+        var p PostParams
+        if err := ctx.Bind(&amp;p); err != nil </span><span class="cov0" title="0">{
+                return &amp;echo.HTTPError{
+                        Code:     http.StatusBadRequest,
+                        Message:  "bad request",
+                        Internal: err,
+                }
+        }</span>
+
+        <span class="cov8" title="1">if err := ctx.Validate(p); err != nil </span><span class="cov0" title="0">{
+                return &amp;echo.HTTPError{
+                        Code:     http.StatusBadRequest,
+                        Message:  err.Error(),
+                        Internal: err,
+                }
+        }</span>
+
+        <span class="cov8" title="1">res, err := CreateItem(ctx.Request().Context(), h.pool, p)
+        if err != nil </span><span class="cov0" title="0">{
+                return &amp;echo.HTTPError{
+                        Code:     http.StatusInternalServerError,
+                        Message:  "internal server error",
+                        Internal: err,
+                }
+        }</span>
+
+        <span class="cov8" title="1">return ctx.JSON(http.StatusOK, res)</span>
+}
+
+func (h *Handler) PUT(ctx echo.Context) error <span class="cov8" title="1">{
+        var p PutParams
+        if err := ctx.Bind(&amp;p); err != nil </span><span class="cov0" title="0">{
+                return &amp;echo.HTTPError{
+                        Code:     http.StatusBadRequest,
+                        Message:  "bad request",
+                        Internal: err,
+                }
+        }</span>
+
+        <span class="cov8" title="1">if err := ctx.Validate(p); err != nil </span><span class="cov0" title="0">{
+                return &amp;echo.HTTPError{
+                        Code:     http.StatusBadRequest,
+                        Message:  err.Error(),
+                        Internal: err,
+                }
+        }</span>
+
+        <span class="cov8" title="1">res, err := UpdateItem(ctx.Request().Context(), h.pool, p)
+        if err != nil </span><span class="cov0" title="0">{
+                return &amp;echo.HTTPError{
+                        Code:     http.StatusInternalServerError,
+                        Message:  "internal server error",
+                        Internal: err,
+                }
+        }</span>
+
+        <span class="cov8" title="1">return ctx.JSON(http.StatusOK, res)</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package todo
+
+import (
+        "context"
+
+        "github.com/fjnkt98/todo-go/repository"
+        validation "github.com/go-ozzo/ozzo-validation/v4"
+        "github.com/goark/errs"
+        "github.com/jackc/pgx/v5/pgxpool"
+)
+
+type PostParams struct {
+        Title string `json:"title"`
+}
+
+func (p PostParams) Validate() error <span class="cov8" title="1">{
+        return validation.ValidateStruct(
+                &amp;p,
+                validation.Field(
+                        &amp;p.Title,
+                        validation.Required,
+                        validation.RuneLength(0, 200),
+                ),
+        )
+}</span>
+
+type PostResponse struct {
+        Item Item `json:"item"`
+}
+
+func CreateItem(ctx context.Context, pool *pgxpool.Pool, p PostParams) (*PostResponse, error) <span class="cov8" title="1">{
+        tx, err := pool.Begin(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, errs.New(
+                        "failed to begin transaction",
+                        errs.WithCause(err),
+                        errs.WithContext("params", p),
+                )
+        }</span>
+        <span class="cov8" title="1">defer tx.Rollback(ctx)
+
+        q := repository.New(pool).WithTx(tx)
+        item, err := q.CreateItem(ctx, p.Title)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, errs.New(
+                        "failed to create item",
+                        errs.WithCause(err),
+                        errs.WithContext("params", p),
+                )
+        }</span>
+
+        <span class="cov8" title="1">if err := tx.Commit(ctx); err != nil </span><span class="cov0" title="0">{
+                return nil, errs.New(
+                        "failed to commit the transaction",
+                        errs.WithCause(err),
+                        errs.WithContext("params", p),
+                )
+        }</span>
+
+        <span class="cov8" title="1">return &amp;PostResponse{
+                Item: NewItem(item),
+        }, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package todo
+
+import (
+        "context"
+
+        "github.com/fjnkt98/todo-go/repository"
+        validation "github.com/go-ozzo/ozzo-validation/v4"
+        "github.com/goark/errs"
+        "github.com/jackc/pgx/v5/pgxpool"
+)
+
+type PutResponse struct {
+        Item Item `json:"item"`
+}
+
+type PutParams struct {
+        ID    int64  `param:"id"`
+        Title string `json:"title"`
+}
+
+func (p PutParams) Validate() error <span class="cov8" title="1">{
+        return validation.ValidateStruct(
+                &amp;p,
+                validation.Field(
+                        &amp;p.ID,
+                        validation.Required,
+                ),
+                validation.Field(
+                        &amp;p.Title,
+                        validation.Required,
+                        validation.RuneLength(0, 200),
+                ),
+        )
+}</span>
+
+func UpdateItem(ctx context.Context, pool *pgxpool.Pool, p PutParams) (*PutResponse, error) <span class="cov8" title="1">{
+        tx, err := pool.Begin(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, errs.New(
+                        "failed to begin transaction",
+                        errs.WithCause(err),
+                        errs.WithContext("params", p),
+                )
+        }</span>
+        <span class="cov8" title="1">defer tx.Rollback(ctx)
+
+        q := repository.New(pool).WithTx(tx)
+        item, err := q.UpdateItem(ctx, repository.UpdateItemParams{ID: p.ID, Title: p.Title})
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, errs.New(
+                        "failed to update item",
+                        errs.WithCause(err),
+                        errs.WithContext("params", p),
+                )
+        }</span>
+
+        <span class="cov8" title="1">if err := tx.Commit(ctx); err != nil </span><span class="cov0" title="0">{
+                return nil, errs.New(
+                        "failed to commit the transaction",
+                        errs.WithCause(err),
+                        errs.WithContext("params", p),
+                )
+        }</span>
+
+        <span class="cov8" title="1">return &amp;PutResponse{
+                Item: NewItem(item),
+        }, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package todo
+
+import (
+        "time"
+
+        "github.com/fjnkt98/todo-go/repository"
+)
+
+type Item struct {
+        ID        int64     `json:"id"`
+        Title     string    `json:"title"`
+        UpdatedAt time.Time `json:"updated_at"`
+}
+
+func NewItem(item repository.Item) Item <span class="cov8" title="1">{
+        return Item{item.ID, item.Title, item.UpdatedAt}
+}</span>
+
+func NewItems(items []repository.Item) []Item <span class="cov8" title="1">{
+        res := make([]Item, len(items))
+        for i, item := range items </span><span class="cov8" title="1">{
+                res[i] = NewItem(item)
+        }</span>
+        <span class="cov8" title="1">return res</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package api
+
+import (
+        validation "github.com/go-ozzo/ozzo-validation/v4"
+)
+
+type Validator struct{}
+
+func (v *Validator) Validate(i any) error <span class="cov8" title="1">{
+        if c, ok := i.(validation.Validatable); ok </span><span class="cov8" title="1">{
+                return c.Validate()
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package main
+
+import (
+        "context"
+        "fmt"
+        "log/slog"
+        "net/http"
+        "os"
+        "os/signal"
+
+        "github.com/fjnkt98/todo-go/api"
+        "github.com/fjnkt98/todo-go/api/todo"
+        "github.com/fjnkt98/todo-go/repository"
+        "github.com/goark/errs"
+        "github.com/labstack/echo/v4"
+        "github.com/labstack/echo/v4/middleware"
+        "github.com/urfave/cli/v2"
+)
+
+func main() <span class="cov0" title="0">{
+        logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+        slog.SetDefault(logger)
+
+        app := cli.NewApp()
+        app.Flags = []cli.Flag{
+                &amp;cli.IntFlag{
+                        Name:  "port",
+                        Value: 8000,
+                },
+                &amp;cli.StringFlag{
+                        Name:    "database-url",
+                        EnvVars: []string{"DATABASE_URL"},
+                },
+        }
+        app.Action = func(ctx *cli.Context) error </span><span class="cov0" title="0">{
+                pool, err := repository.NewPool(ctx.Context, ctx.String("database-url"))
+                if err != nil </span><span class="cov0" title="0">{
+                        return errs.Wrap(err)
+                }</span>
+                <span class="cov0" title="0">port := ctx.Int("port")
+
+                e := echo.New()
+                e.Use(middleware.RequestID())
+                e.Use(middleware.Logger())
+                e.Use(middleware.Recover())
+                e.HideBanner = true
+                e.HidePort = true
+                e.Validator = new(api.Validator)
+
+                handler := todo.NewHandler(pool)
+
+                e.GET("/api/todo", handler.GET)
+                e.POST("/api/todo", handler.POST)
+                e.PUT("/api/todo/:id", handler.PUT)
+
+                go func() </span><span class="cov0" title="0">{
+                        slog.Info("start server", slog.Int("port", port))
+                        if err := e.Start(fmt.Sprintf(":%d", port)); err != nil &amp;&amp; err != http.ErrServerClosed </span><span class="cov0" title="0">{
+                                slog.Error("failed to start server", slog.Int("port", port), slog.Any("error", err))
+                                panic(fmt.Sprintf("failed to start server: %s", err.Error()))</span>
+                        }
+                }()
+
+                <span class="cov0" title="0">&lt;-ctx.Done()
+                slog.Info("shutdown server")
+                if err := e.Shutdown(ctx.Context); err != nil </span><span class="cov0" title="0">{
+                        return errs.Wrap(err)
+                }</span>
+                <span class="cov0" title="0">return nil</span>
+        }
+
+        <span class="cov0" title="0">ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+        defer stop()
+
+        if err := app.RunContext(ctx, os.Args); err != nil </span><span class="cov0" title="0">{
+                slog.Error("command failed", slog.Any("error", err))
+                os.Exit(1)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">// Code generated by sqlc. DO NOT EDIT.
+// versions:
+//   sqlc v1.26.0
+
+package repository
+
+import (
+        "context"
+
+        "github.com/jackc/pgx/v5"
+        "github.com/jackc/pgx/v5/pgconn"
+)
+
+type DBTX interface {
+        Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
+        Query(context.Context, string, ...interface{}) (pgx.Rows, error)
+        QueryRow(context.Context, string, ...interface{}) pgx.Row
+}
+
+func New(db DBTX) *Queries <span class="cov8" title="1">{
+        return &amp;Queries{db: db}
+}</span>
+
+type Queries struct {
+        db DBTX
+}
+
+func (q *Queries) WithTx(tx pgx.Tx) *Queries <span class="cov8" title="1">{
+        return &amp;Queries{
+                db: tx,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package repository
+
+import (
+        "context"
+
+        "github.com/goark/errs"
+        "github.com/jackc/pgx/v5/pgxpool"
+)
+
+func NewPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) <span class="cov8" title="1">{
+        config, err := pgxpool.ParseConfig(dsn)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, errs.New("failed to parse database connection config", errs.WithCause(err))
+        }</span>
+        <span class="cov8" title="1">pool, err := pgxpool.NewWithConfig(ctx, config)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, errs.New("failed to create connection pool from config", errs.WithCause(err))
+        }</span>
+        <span class="cov8" title="1">return pool, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">// Code generated by sqlc. DO NOT EDIT.
+// versions:
+//   sqlc v1.26.0
+// source: query.sql
+
+package repository
+
+import (
+        "context"
+)
+
+const createItem = `-- name: CreateItem :one
+INSERT INTO
+    "items" ("title")
+VALUES
+    ($1)
+RETURNING
+    id, title, updated_at
+`
+
+func (q *Queries) CreateItem(ctx context.Context, title string) (Item, error) <span class="cov8" title="1">{
+        row := q.db.QueryRow(ctx, createItem, title)
+        var i Item
+        err := row.Scan(&amp;i.ID, &amp;i.Title, &amp;i.UpdatedAt)
+        return i, err
+}</span>
+
+const getItems = `-- name: GetItems :many
+SELECT
+    "id",
+    "title",
+    "updated_at"
+FROM
+    "items"
+ORDER BY
+    "id" ASC
+`
+
+func (q *Queries) GetItems(ctx context.Context) ([]Item, error) <span class="cov8" title="1">{
+        rows, err := q.db.Query(ctx, getItems)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">defer rows.Close()
+        var items []Item
+        for rows.Next() </span><span class="cov8" title="1">{
+                var i Item
+                if err := rows.Scan(&amp;i.ID, &amp;i.Title, &amp;i.UpdatedAt); err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+                <span class="cov8" title="1">items = append(items, i)</span>
+        }
+        <span class="cov8" title="1">if err := rows.Err(); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">return items, nil</span>
+}
+
+const updateItem = `-- name: UpdateItem :one
+UPDATE "items"
+SET
+    "title" = $2,
+    "updated_at" = NOW()
+WHERE
+    "id" = $1
+RETURNING
+    id, title, updated_at
+`
+
+type UpdateItemParams struct {
+        ID    int64  `db:"id"`
+        Title string `db:"title"`
+}
+
+func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error) <span class="cov8" title="1">{
+        row := q.db.QueryRow(ctx, updateItem, arg.ID, arg.Title)
+        var i Item
+        err := row.Scan(&amp;i.ID, &amp;i.Title, &amp;i.UpdatedAt)
+        return i, err
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

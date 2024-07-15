@@ -1,4 +1,4 @@
--- name: FetchItems :many
+-- name: GetItems :many
 SELECT
     "id",
     "title",
