@@ -16,6 +16,17 @@ services:
       - 5432:5432
     networks:
       todo-go-net:
+  jaeger:
+    container_name: todo-go-jaeger
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - LOG_LEVEL=debug
+    networks:
+      - todo-go-net
 
 networks:
   todo-go-net:
