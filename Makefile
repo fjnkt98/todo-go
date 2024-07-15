@@ -16,5 +16,5 @@ atlas-schema-inspect:
 
 .PHONY: atlas-schema-apply
 atlas-schema-apply:
-	@atlas schema apply --url ${DATABASE_URL} --to file://schema.hcl
+	@atlas schema apply --url ${DATABASE_URL} --to file://schema.sql --dev-url "docker://postgres/15/dev"
 
