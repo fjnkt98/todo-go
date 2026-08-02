@@ -1,9 +1,14 @@
 [tools]
 golangci-lint = "v2.12.2"
 node = "24"
+sqlite3def = "latest"
 
 [env]
 DATABASE_URL = { required = true, redact = true }
 CGO_ENABLED = 1
 
-[tasks]
+[tasks."db:check"]
+run = "sqlite3def app.db --enable-drop --check < schema.sql"
+
+[tasks."db:migrate"]
+run = "sqlite3def app.db --enable-drop --apply < schema.sql"
