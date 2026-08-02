@@ -1,0 +1,8 @@
+[tools]
+node = "24"
+
+[env]
+DATABASE_URL = { required = true, redact = true }
+CGO_ENABLED = 1
+
+[tasks]
