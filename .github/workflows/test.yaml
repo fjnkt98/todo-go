@@ -19,6 +19,8 @@ jobs:
           version: 2026.8.0
           install: true
           cache: true
+      - name: migrate
+        run: dbmate up
       - name: lint
         run: mise tasks run 'lint:*'
       - name: test
