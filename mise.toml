@@ -12,3 +12,9 @@ DBMATE_DRIVER = "sqlite3"
 DBMATE_MIGRATIONS_DIR = "migrations"
 DBMATE_SCHEMA_FILE = "schema.sql"
 DBMATE_STRICT = "1"
+
+[tasks."lint:go"]
+run = ["go mod tidy -diff", "golangci-lint run"]
+
+[tasks."lint:sqlc"]
+run = ["sqlc diff", "sqlc vet"]
