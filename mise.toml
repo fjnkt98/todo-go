@@ -2,8 +2,13 @@
 dbmate = "2.35.0"
 golangci-lint = "v2.12.2"
 node = "24"
+sqlc = "1.31.1"
 
 [env]
-DATABASE_URL = { required = true, redact = true }
-DBMATE_DRIVER = "sqlite3"
 CGO_ENABLED = 1
+DATABASE_URL = { required = true, redact = true }
+PORT = { default = 8000 }
+DBMATE_DRIVER = "sqlite3"
+DBMATE_MIGRATIONS_DIR = "migrations"
+DBMATE_SCHEMA_FILE = "schema.sql"
+DBMATE_STRICT = "1"
