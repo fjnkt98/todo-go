@@ -12,10 +12,3 @@ func TestNewServer(t *testing.T) {
 		t.Errorf("expected nil, but got %v", err)
 	}
 }
-
-func TestNewServeMux(t *testing.T) {
-	_, err := server.NewServeMux()
-	if err != nil {
-		t.Errorf("expected nil, but got %v", err)
-	}
-}

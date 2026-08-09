@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -27,17 +28,29 @@ func serve(ctx context.Context) error {
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
 	defer stop()
 
+	shutdown, err := server.SetupOTel(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = errors.Join(err, shutdown(ctx))
+	}()
+
+	errs := make(chan error, 1)
 	go func() {
 		slog.InfoContext(ctx, "start server", slog.Int("port", port))
 		if err := s.ListenAndServe(); err != http.ErrServerClosed {
-			slog.ErrorContext(ctx, "server error", slog.Any("error", err))
-			return
+			errs <- err
 		}
 	}()
 
-	<-ctx.Done()
-	if err := s.Shutdown(ctx); err != nil {
-		return fmt.Errorf("shutdown server: %w", err)
+	select {
+	case err = <-errs:
+		return fmt.Errorf("server error: %w", err)
+	case <-ctx.Done():
+		if err := s.Shutdown(ctx); err != nil {
+			return fmt.Errorf("shutdown server: %w", err)
+		}
 	}
 	slog.InfoContext(ctx, "shutdown server", slog.Int("port", port))
 	return nil
