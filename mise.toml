@@ -1,7 +1,10 @@
 [tools]
+actionlint = "1.7.12"
 dbmate = "2.35.0"
+go = "1.26.5"
 golangci-lint = "v2.12.2"
 node = "24"
+pinact = "4.1.0"
 sqlc = "1.31.1"
 
 [env]
@@ -18,3 +21,9 @@ run = ["go mod tidy -diff", "golangci-lint run"]
 
 [tasks."lint:sqlc"]
 run = ["sqlc diff", "sqlc vet"]
+
+[tasks."lint:action"]
+run = ["actionlint", "pinact run --check"]
+
+[tasks.test]
+run = "go test -v ./..."
