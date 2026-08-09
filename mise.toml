@@ -6,6 +6,7 @@ golangci-lint = "v2.12.2"
 node = "24"
 pinact = "4.1.0"
 sqlc = "1.31.1"
+sqlite = "3.53.4"
 
 [env]
 CGO_ENABLED = 1
