@@ -2,8 +2,9 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"embed"
 	"fmt"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,6 +15,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+//go:embed templates
+var templates embed.FS
+
 func serve(ctx context.Context) error {
 	port, err := strconv.Atoi(os.Getenv("PORT"))
 	if err != nil {
@@ -22,14 +26,26 @@ func serve(ctx context.Context) error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "application/json")
-		v := map[string]string{
-			"message": "ok",
+		t, err := template.ParseFS(templates, "templates/top.html", "templates/base.html")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, "server error") //nolint: errcheck
+			return
 		}
 
-		if err := json.NewEncoder(w).Encode(v); err != nil {
-			slog.ErrorContext(r.Context(), "write resuponse body", slog.Any("error", err))
+		type Data struct {
+			Title   string
+			Content string
+		}
+
+		data := Data{
+			Title:   "ToDo Go",
+			Content: "This is my first html/template content.",
+		}
+
+		w.WriteHeader(http.StatusOK)
+		if err := t.Execute(w, &data); err != nil {
+			slog.ErrorContext(ctx, "write ResponseWriter", slog.Any("error", err))
 		}
 	})
 
