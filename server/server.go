@@ -1,3 +1,4 @@
+// Package server produces http server
 package server
 
 import (
@@ -22,7 +23,7 @@ func NewServer(port int) (*http.Server, error) {
 	mux.Handle("GET /static/", http.FileServer(http.FS(statics)))
 
 	handler := RecoveryMiddleware(mux)
-	handler = otelhttp.NewHandler(handler, "/")
+	handler = otelhttp.NewHandler(handler, "http-request")
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", port),

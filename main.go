@@ -12,7 +12,96 @@ import (
 
 	"github.com/fjnkt98/todo-go/server"
 	_ "github.com/mattn/go-sqlite3"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
+	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
+
+var serviceName = semconv.ServiceNameKey.String("todo-go")
+
+type traceHandler struct {
+	slog.Handler
+	project string
+}
+
+func (h *traceHandler) Handle(ctx context.Context, record slog.Record) error {
+	path := fmt.Sprintf("projects/%s/traces/", h.project)
+	if s := trace.SpanContextFromContext(ctx); s.IsValid() {
+		record.AddAttrs(
+			slog.String("logging.googleapis.com/trace", path+s.TraceID().String()),
+			slog.String("logging.googleapis.com/spanId", s.SpanID().String()),
+			slog.Bool("logging.googleapis.com/trace_sampled", s.TraceFlags().IsSampled()),
+		)
+	}
+	return h.Handler.Handle(ctx, record)
+}
+
+func setup(ctx context.Context, target string) (func(context.Context) error, error) {
+	var shutdowns []func(context.Context) error
+
+	shutdown := func(ctx context.Context) error {
+		var err error
+		for _, fn := range shutdowns {
+			err = errors.Join(err, fn(ctx))
+		}
+		shutdowns = nil
+		return err
+	}
+
+	// grpc
+	conn, err := grpc.NewClient(
+		target,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return shutdown, fmt.Errorf("create grpc connection to otel collector: %w", err)
+	}
+
+	// resource
+	res, err := resource.New(
+		ctx,
+		resource.WithAttributes(serviceName),
+	)
+	if err != nil {
+		return shutdown, fmt.Errorf("create resource: %w", err)
+	}
+
+	// propagator
+	propagator := propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	)
+	otel.SetTextMapPropagator(propagator)
+
+	// tracer provider
+	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithGRPCConn(conn))
+	if err != nil {
+		return shutdown, fmt.Errorf("create trace exporter: %w", err)
+	}
+	tracerProvider := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithResource(res),
+		sdktrace.WithSpanProcessor(sdktrace.NewBatchSpanProcessor(traceExporter)),
+	)
+	shutdowns = append(shutdowns, tracerProvider.Shutdown)
+	otel.SetTracerProvider(tracerProvider)
+
+	// logger
+	logger := slog.New(&traceHandler{
+		Handler: slog.NewJSONHandler(os.Stdout, nil),
+		project: os.Getenv("GCP_PROJECT"),
+	})
+	slog.SetDefault(logger)
+
+	return shutdown, nil
+}
 
 func serve(ctx context.Context) error {
 	port, err := strconv.Atoi(os.Getenv("PORT"))
@@ -28,7 +117,7 @@ func serve(ctx context.Context) error {
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
 	defer stop()
 
-	shutdown, err := server.SetupOTel(ctx)
+	shutdown, err := setup(ctx, os.Getenv("COLLECTOR_URL"))
 	if err != nil {
 		return err
 	}
@@ -57,9 +146,6 @@ func serve(ctx context.Context) error {
 }
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
-
 	ctx := context.Background()
 
 	if err := serve(ctx); err != nil {

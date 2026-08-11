@@ -10,12 +10,16 @@ sqlite = "3.53.4"
 
 [env]
 CGO_ENABLED = 1
-DATABASE_URL = { required = true, redact = true }
 PORT = { default = 8000 }
+
+DATABASE_URL = { required = true, redact = true }
 DBMATE_DRIVER = "sqlite3"
 DBMATE_MIGRATIONS_DIR = "migrations"
 DBMATE_SCHEMA_FILE = "schema.sql"
 DBMATE_STRICT = "1"
+
+COLLECTOR_URL = { required = true }
+GCP_PROJECT = { required = true }
 
 [tasks."lint:go"]
 run = ["go mod tidy -diff", "golangci-lint run"]
